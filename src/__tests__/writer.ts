@@ -1,4 +1,4 @@
-import Writer, { ArrayWriter, BufferStorage } from "../writer";
+import Writer, { ArrayWriter, BufferStorage } from "../";
 
 test("file-storage - one row, one column", async () => {
     const buffer = new BufferStorage(1000);
