@@ -28,7 +28,7 @@ export class BufferStorage implements IStorage<Buffer> {
         this.buffer = Buffer.alloc(size, whitespace);
     }
 
-    async open(): Promise<void> { }
+    async open(): Promise<void> {}
 
     async close(): Promise<Buffer> {
         return this.buffer.subarray(0, this.maxByteWritten);
@@ -36,7 +36,9 @@ export class BufferStorage implements IStorage<Buffer> {
 
     async write(data: string | Buffer, byteOffset: number): Promise<void> {
         if (this.size < byteOffset + data.length) {
-            throw new Error(`initial buffer size of ${this.size} is too small to write ${data.length} bytes at ${byteOffset}`);
+            throw new Error(
+                `initial buffer size of ${this.size} is too small to write ${data.length} bytes at ${byteOffset}`,
+            );
         }
 
         if (typeof data === "string") {
@@ -44,7 +46,6 @@ export class BufferStorage implements IStorage<Buffer> {
         } else {
             data.copy(this.buffer, byteOffset);
         }
-
 
         if (this.maxByteWritten < byteOffset + data.length) {
             this.maxByteWritten = byteOffset + data.length;
@@ -79,34 +80,36 @@ export class FileStorage implements IStorage<void> {
         }
         await this.file.write(data, byteOffset);
     }
-
 }
 
 export default class Writer<T> implements IWriter<T> {
     private rowWidth: number;
     private maxRow;
 
-    constructor(private cellWidth: number, private columns: number, private storage: IStorage<Buffer> = new BufferStorage(1024 * 1024)) {
+    constructor(
+        private cellWidth: number,
+        private columns: number,
+        private storage: IStorage<Buffer> = new BufferStorage(1024 * 1024),
+    ) {
         this.rowWidth =
             // data space
             cellWidth * columns +
-
             // commas
-            columns - 1 +
-
+            columns -
+            1 +
             // new line
             1;
 
         this.maxRow = -1;
     }
 
-    async add(data: string, row: number, column: number): Promise<void> {
+    async add(_data: string, _row: number, _column: number): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    async carryForwardColumn(column: number): Promise<void> {
+    async carryForwardColumn(_column: number): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    async forEach(callback: (columns: number[]) => void): Promise<void> {
+    async forEach(_callback: (_columns: number[]) => void): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
@@ -118,7 +121,11 @@ export default class Writer<T> implements IWriter<T> {
         return this.storage.close() as T;
     }
 
-    async write(data: string | number, row: number, column: number): Promise<void> {
+    async write(
+        data: string | number,
+        row: number,
+        column: number,
+    ): Promise<void> {
         data = data.toString();
 
         this.grow(row);
@@ -143,7 +150,10 @@ export default class Writer<T> implements IWriter<T> {
 
         for (let i = 0; i < amount; ++i) {
             for (let j = 1; j < this.columns; ++j) {
-                bytes.writeUInt8(comma, i * this.rowWidth + j * this.cellWidth + j - 1);
+                bytes.writeUInt8(
+                    comma,
+                    i * this.rowWidth + j * this.cellWidth + j - 1,
+                );
             }
             bytes.writeUInt8(newLine, i * this.rowWidth + this.rowWidth - 1);
         }
@@ -163,7 +173,9 @@ export class ArrayWriter implements IWriter<number[][]> {
         this.view = new Float64Array(columnCount * 10);
     }
 
-    async forEach(callback: (columns: number[], row: number) => void): Promise<void> {
+    async forEach(
+        callback: (columns: number[], row: number) => void,
+    ): Promise<void> {
         for (let i = 0; i <= this.maxRow; ++i) {
             callback(this.getRow(i), i);
         }
@@ -179,7 +191,11 @@ export class ArrayWriter implements IWriter<number[][]> {
         return out;
     }
 
-    async write(d: string | number, row: number, column: number): Promise<void> {
+    async write(
+        d: string | number,
+        row: number,
+        column: number,
+    ): Promise<void> {
         const data = +d;
         if (this.maxRow < row) {
             this.maxRow = row;
@@ -235,5 +251,3 @@ export class ArrayWriter implements IWriter<number[][]> {
         return row;
     }
 }
-
-

@@ -17,7 +17,7 @@ test("file-storage - two row, one column", async () => {
     await storage.open();
     await storage.write("foo", 1, 0);
     const contents = await storage.close();
-    const expected = `    \nfoo \n`
+    const expected = `    \nfoo \n`;
 
     expect(contents.toString()).toBe(expected);
 });
@@ -29,7 +29,7 @@ test("file-storage - one row, two column", async () => {
     await storage.open();
     await storage.write("foo", 1, 1);
     const contents = await storage.close();
-    const expected = `    ,    \n    ,foo \n`
+    const expected = `    ,    \n    ,foo \n`;
 
     expect(contents.toString()).toBe(expected);
 });
@@ -41,13 +41,12 @@ test("file-storage - large", async () => {
     await storage.open();
     await storage.write("foo", 3, 2);
     const contents = await storage.close();
-    const expected = `    ,    ,    \n    ,    ,    \n    ,    ,    \n    ,    ,foo \n`
+    const expected = `    ,    ,    \n    ,    ,    \n    ,    ,    \n    ,    ,foo \n`;
 
     expect(contents.toString()).toBe(expected);
 });
 
 test("array storage", async () => {
-
     const storage = new ArrayWriter(4);
 
     await storage.open();
@@ -57,14 +56,13 @@ test("array storage", async () => {
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
-        [0, 0, 123, 0]
+        [0, 0, 123, 0],
     ];
 
     expect(out).toEqual(expected);
 });
 
 test("array storage - add", async () => {
-
     const storage = new ArrayWriter(4);
 
     await storage.open();
@@ -75,14 +73,13 @@ test("array storage - add", async () => {
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
-        [0, 0, 123 + 456, 0]
+        [0, 0, 123 + 456, 0],
     ];
 
     expect(out).toEqual(expected);
 });
 
 test("array storage - forEach", async () => {
-
     const storage = new ArrayWriter(4);
 
     await storage.open();
