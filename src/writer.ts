@@ -11,6 +11,15 @@ export interface IStorage<T> {
     //add(data: string, row: number, column: number): Promise<this>;
 }
 
+export interface IWriter<T> {
+    open(): Promise<void>;
+    close(): Promise<T>;
+    write(data: string | number, row: number, column: number): Promise<void>;
+    add(data: string | number, row: number, column: number): Promise<void>;
+    carryForwardColumn(column: number): Promise<void>;
+    forEach(callback: (columns: number[]) => void): Promise<void>;
+}
+
 export class BufferStorage implements IStorage<Buffer> {
     private buffer: Buffer;
     private maxByteWritten = 0;
@@ -73,7 +82,7 @@ export class FileStorage implements IStorage<void> {
 
 }
 
-export default class Storage<T> {
+export default class Writer<T> implements IWriter<T> {
     private rowWidth: number;
     private maxRow;
 
@@ -91,16 +100,27 @@ export default class Storage<T> {
         this.maxRow = -1;
     }
 
-    async open(path?: string): Promise<this> {
+    async add(data: string, row: number, column: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async carryForwardColumn(column: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async forEach(callback: (columns: number[]) => void): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
+    async open(path?: string): Promise<void> {
         await this.storage.open(path);
-        return this;
     }
 
     async close(): Promise<T> {
         return this.storage.close() as T;
     }
 
-    async write(data: string, row: number, column: number): Promise<this> {
+    async write(data: string | number, row: number, column: number): Promise<void> {
+        data = data.toString();
+
         this.grow(row);
 
         if (data.length > this.cellWidth) {
@@ -111,8 +131,6 @@ export default class Storage<T> {
         const columnOffset = column * this.cellWidth + column;
 
         await this.storage.write(data, rowOffset + columnOffset);
-
-        return this;
     }
 
     private async grow(to: number): Promise<void> {
@@ -138,7 +156,84 @@ export default class Storage<T> {
     }
 }
 
+export class ArrayWriter implements IWriter<number[][]> {
+    private view: Float64Array;
+    private maxRow: number = -1;
+    constructor(private columnCount: number) {
+        this.view = new Float64Array(columnCount * 10);
+    }
 
+    async forEach(callback: (columns: number[], row: number) => void): Promise<void> {
+        for (let i = 0; i <= this.maxRow; ++i) {
+            callback(this.getRow(i), i);
+        }
+    }
 
+    async open(): Promise<void> {}
+
+    async close(): Promise<number[][]> {
+        const out: number[][] = [];
+        for (let i = 0; i <= this.maxRow; ++i) {
+            out.push(this.getRow(i));
+        }
+        return out;
+    }
+
+    async write(d: string | number, row: number, column: number): Promise<void> {
+        const data = +d;
+        if (this.maxRow < row) {
+            this.maxRow = row;
+        }
+        this.grow(row);
+        this.view[this.offset(row, column)] = data;
+    }
+
+    async add(d: string | number, row: number, column: number): Promise<void> {
+        const data = +d;
+        if (this.maxRow < row) {
+            this.maxRow = row;
+        }
+        this.grow(row);
+        this.view[this.offset(row, column)] += data;
+    }
+
+    async carryForwardColumn(column: number): Promise<void> {
+        let previous: number = 0;
+        for (let i = 0; i < this.maxRow; ++i) {
+            const offset = this.offset(i, column);
+            const curr = this.view[offset];
+            if (previous === 0) {
+                previous = curr;
+            } else if (curr === 0 && previous !== 0) {
+                this.view[offset] = previous;
+            } else {
+                previous = curr;
+            }
+        }
+    }
+
+    private offset(row: number, column: number): number {
+        return row * this.columnCount + column;
+    }
+
+    private grow(row: number): void {
+        const offset = this.offset(row, 0);
+
+        if (offset < this.view.length) {
+            return;
+        }
+
+        const newView = new Float64Array(this.view.length * 2);
+        newView.set(this.view);
+    }
+
+    private getRow(r: number): number[] {
+        const row: number[] = [];
+        for (let col = 0; col < this.columnCount; ++col) {
+            row.push(this.view[this.offset(r, col)]);
+        }
+        return row;
+    }
+}
 
 
